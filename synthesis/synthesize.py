@@ -15,6 +15,7 @@ nltk.download("punkt")
 sys.path.append(dirname(dirname(abspath(__file__))))
 matplotlib.use("Agg")
 
+from training.utils import load_symbols
 from training.tacotron2_model import Tacotron2
 from training.clean_text import clean_text
 from training import DEFAULT_ALPHABET
@@ -214,10 +215,17 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--audio_output_path", type=str, help="path to save output audio to", required=False)
     parser.add_argument("--silence_padding", type=float, help="Padding between sentences in seconds", default=0.15)
     parser.add_argument("--sample_rate", type=int, help="Audio sample rate", default=22050)
+    parser.add_argument("--alphabet", type=str, help="Alphabet file path for given language", default=DEFAULT_ALPHABET)
     args = parser.parse_args()
 
     assert os.path.isfile(args.model_path), "Model not found"
     assert os.path.isfile(args.vocoder_model_path), "vocoder model not found"
+
+    if args.alphabet != DEFAULT_ALPHABET:
+        assert os.path.isfile(args.alphabet), "Alphabet file not found"
+        symbols = load_symbols(args.alphabet)
+    else:
+        symbols = DEFAULT_ALPHABET
 
     model = load_model(args.model_path)
     vocoder = Hifigan(args.vocoder_model_path, args.hifigan_config_path)
@@ -225,6 +233,7 @@ if __name__ == "__main__":
     synthesize(
         model=model,
         text=args.text,
+        symbols=symbols,
         graph_path=args.graph_output_path,
         audio_path=args.audio_output_path,
         vocoder=vocoder,
