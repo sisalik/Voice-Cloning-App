@@ -210,9 +210,9 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model_path", type=str, help="tacotron2 model path", required=True)
     parser.add_argument("-vm", "--vocoder_model_path", type=str, help="vocoder model path", required=True)
     parser.add_argument("-hc", "--hifigan_config_path", type=str, help="hifigan_config path", required=True)
-    parser.add_argument("-t", "--text", type=str, help="text to synthesize", required=True)
+    parser.add_argument("-t", "--text", type=str, help="text to synthesize", required=True, action="append")
     parser.add_argument("-g", "--graph_output_path", type=str, help="path to save alignment graph to", required=False)
-    parser.add_argument("-a", "--audio_output_path", type=str, help="path to save output audio to", required=False)
+    parser.add_argument("-a", "--audio_output_path", type=str, help="path to save output audio to", required=False, action="append")
     parser.add_argument("--silence_padding", type=float, help="Padding between sentences in seconds", default=0.15)
     parser.add_argument("--sample_rate", type=int, help="Audio sample rate", default=22050)
     parser.add_argument("--alphabet", type=str, help="Alphabet file path for given language", default=DEFAULT_ALPHABET)
@@ -230,13 +230,30 @@ if __name__ == "__main__":
     model = load_model(args.model_path)
     vocoder = Hifigan(args.vocoder_model_path, args.hifigan_config_path)
 
-    synthesize(
-        model=model,
-        text=args.text,
-        symbols=symbols,
-        graph_path=args.graph_output_path,
-        audio_path=args.audio_output_path,
-        vocoder=vocoder,
-        silence_padding=args.silence_padding,
-        sample_rate=args.sample_rate,
-    )
+    if isinstance(args.text, list) or isinstance(args.audio_output_path, list):
+        assert type(args.text) == type(args.audio_output_path), "Text and audio must be both list or both str"
+        assert len(args.text) == len(args.audio_output_path), "Number of text and audio files must match"
+        for text, output_path in zip(args.text, args.audio_output_path):
+            synthesize(
+                model=model,
+                text=text,
+                symbols=symbols,
+                graph_path=args.graph_output_path,
+                audio_path=output_path,
+                vocoder=vocoder,
+                silence_padding=args.silence_padding,
+                sample_rate=args.sample_rate,
+                max_decoder_steps=1600,
+            )
+    else:
+        synthesize(
+            model=model,
+            text=args.text,
+            symbols=symbols,
+            graph_path=args.graph_output_path,
+            audio_path=args.audio_output_path,
+            vocoder=vocoder,
+            silence_padding=args.silence_padding,
+            sample_rate=args.sample_rate,
+            max_decoder_steps=1600,
+        )
