@@ -190,6 +190,8 @@ def synthesize(
 
             audio = np.concatenate(audio_segments)
             write(audio_path, sample_rate, audio)
+            print(f"Audio file saved to {audio_path}")
+            sys.stdout.flush()  # Ensure the message is sent to the subprocess pipe
     else:
         # Single sentence
         text = clean_text(text.strip(), symbols)
@@ -202,6 +204,8 @@ def synthesize(
         if audio_path:
             audio = vocoder.generate_audio(mel_outputs_postnet)
             write(audio_path, sample_rate, audio)
+            print(f"Audio file saved to {audio_path}")
+            sys.stdout.flush()  # Ensure the message is sent to the subprocess pipe
 
 
 if __name__ == "__main__":
@@ -231,8 +235,13 @@ if __name__ == "__main__":
     vocoder = Hifigan(args.vocoder_model_path, args.hifigan_config_path)
 
     if isinstance(args.text, list) or isinstance(args.audio_output_path, list):
-        assert type(args.text) == type(args.audio_output_path), "Text and audio must be both list or both str"
-        assert len(args.text) == len(args.audio_output_path), "Number of text and audio files must match"
+        assert isinstance(args.text, list) == isinstance(
+            args.audio_output_path, list
+        ), "Text and audio must be both list or both str"
+        assert len(args.text) == len(args.audio_output_path), (
+            "Text and audio must have same length "
+            f"({len(args.text)} != {len(args.audio_output_path)})"
+        )
         for text, output_path in zip(args.text, args.audio_output_path):
             synthesize(
                 model=model,
